@@ -1,0 +1,42 @@
+services:
+  monitoring_api:
+    build: ./api
+    container_name: monitoring_api
+    restart: unless-stopped
+    privileged: true
+
+    # ขอสิทธิ์ GPU แบบ compose (ต้องมี NVIDIA Container Toolkit บนโฮสต์)
+    gpus: all
+    environment:
+      NVIDIA_VISIBLE_DEVICES: "all"
+      NVIDIA_DRIVER_CAPABILITIES: "utility,compute"
+
+    # NVMe ยังต้องแม็พอยู่
+    devices:
+      - /dev/nvme0:/dev/nvme0
+      - /dev/nvme0n1:/dev/nvme0n1
+      - /dev/nvme1:/dev/nvme1
+      - /dev/nvme1n1:/dev/nvme1n1
+
+    volumes:
+      - /sys/class/nvme:/sys/class/nvme:ro
+      - /mnt/data:/mnt/data:ro   # << เพิ่มบรรทัดนี้
+    # (ลบรายการ /dev/nvidia* ออก ไม่ต้องใช้แล้ว)
+
+    
+    ports:
+      - "8000:8000"
+
+
+  monitoring_ui:
+    image: nginx:alpine
+    container_name: monitoring_ui
+    restart: unless-stopped
+    volumes:
+      - ./ui:/usr/share/nginx/html:ro
+    ports:
+      - "8001:80"
+
+networks:
+  default:
+    name: monitoring-net

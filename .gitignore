@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Node/Web (เผื่ออนาคต)
+node_modules/
+dist/
+.build/
+
+# OS/IDE
+.DS_Store
+*.swp
+.idea/
+.vscode/
+
+# Docker artifacts
+*.log
+*.tmp
+
+# Secrets (ถ้ามีให้ใส่ชื่อไฟล์เพิ่มเอง)
+.env
+monitoring-app-backup.tgz

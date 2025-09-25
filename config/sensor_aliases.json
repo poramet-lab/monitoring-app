@@ -1,0 +1,10 @@
+{
+  "overrides": [
+    { "chip": "coretemp",      "label": "Package id 0", "name": "CPU Package" },
+    { "chip": "gigabyte_wmi",  "label": "temp3",        "name": "VRM" },
+    { "chip": "gigabyte_wmi",  "label": "temp1",        "name": "Chipset" },
+    { "chip": "nvme",          "label": "Composite",    "name": "NVMe (Composite)" },
+    { "chip": "r8169_0_8200:00","label": "temp1",       "name": "LAN Controller" },
+    { "chip": "spd5118",       "label": "temp1",        "name": "DRAM (PMIC)" }
+  ]
+}

@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PrivateAI Hub</title>
+  <!-- Tailwind (CDN ใช้ได้ในเครื่อง) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white p-6 sm:p-8">
+  <h1 class="text-2xl font-bold mb-1">PrivateAI Hub</h1>
+  <p class="text-gray-300 mb-6">Real-time System Monitor</p>
+
+  <!-- GRID: 2 คอลัมน์ใหญ่ -->
+  <div class="grid gap-6 md:grid-cols-2">
+    <!-- GPU -->
+    <div class="bg-gray-800 rounded-lg p-6 shadow-lg">
+      <h2 class="text-xl font-semibold text-gray-200 mb-4">GPU</h2>
+      <div class="space-y-2 text-gray-300">
+        <div><span class="font-semibold">Model:</span> <span id="gpu-name">—</span></div>
+        <div><span class="font-semibold">Usage:</span> <span id="gpu-util">—%</span></div>
+        <div><span class="font-semibold">VRAM:</span> <span id="gpu-mem">—</span></div>
+        <div><span class="font-semibold">Temp:</span> <span id="gpu-temp">— °C</span></div>
+        <div><span class="font-semibold">Power:</span> <span id="gpu-power">— W</span></div>
+      </div>
+    </div>
+
+    <!-- SSD Summary (สองคอลัมน์: OS / Data) -->
+    <div class="bg-gray-800 rounded-lg p-6 shadow-lg">
+      <h2 class="text-xl font-semibold text-gray-200 mb-4">SSD Health (Summary)</h2>
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-sm text-gray-300">
+          <thead class="text-gray-400">
+            <tr>
+              <th class="text-left font-medium pb-2"></th>
+              <th class="text-left font-medium pb-2">OS</th>
+              <th class="text-left font-medium pb-2">Data</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-gray-700">
+              <td class="py-2 pr-4 font-medium">Usage</td>
+              <td class="py-2 pr-8" id="ssd-sum-usage-os">—</td>
+              <td class="py-2" id="ssd-sum-usage-data">—</td>
+            </tr>
+            <tr class="border-t border-gray-700">
+              <td class="py-2 pr-4 font-medium">Temp (°C)</td>
+              <td class="py-2 pr-8" id="ssd-sum-temp-os">—</td>
+              <td class="py-2" id="ssd-sum-temp-data">—</td>
+            </tr>
+            <tr class="border-t border-gray-700">
+              <td class="py-2 pr-4 font-medium">Written/Read (TB)</td>
+              <td class="py-2 pr-8" id="ssd-sum-rw-os">—</td>
+              <td class="py-2" id="ssd-sum-rw-data">—</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- RAM -->
+    <div class="bg-gray-800 rounded-lg p-6 shadow-lg">
+      <h2 class="text-xl font-semibold text-gray-200 mb-4">Memory (RAM)</h2>
+      <div class="space-y-2 text-gray-300">
+        <div><span class="font-semibold">Usage:</span> <span id="ram-usage">— GB</span></div>
+        <div><span class="font-semibold">Percentage:</span> <span id="ram-percent">—%</span></div>
+        <div><span class="font-semibold">Temp (DIMM max):</span> <span id="ram-temp">— °C</span></div>
+      </div>
+    </div>
+
+    <!-- CPU & Network -->
+    <div class="bg-gray-800 rounded-lg p-6 shadow-lg">
+      <h2 class="text-xl font-semibold text-gray-200 mb-4">CPU & Network</h2>
+      <div class="flex items-end justify-between">
+        <div>
+          <div class="text-3xl font-bold text-cyan-300" id="cpu-temp">—</div>
+          <div class="text-sm text-gray-400 mt-1" id="cpu-src"></div>
+        </div>
+      </div>
+      <hr class="border-gray-700 my-4">
+      <div class="space-y-1 text-gray-300">
+        <div><span class="font-semibold">Network:</span>
+          <span id="net-down">—</span> /
+          <span id="net-up">—</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SSD Health (Table) -->
+  <div class="bg-gray-800 rounded-lg p-6 shadow-lg mt-6">
+    <h2 class="text-xl font-semibold text-gray-200 mb-4">SSD Health</h2>
+    <div class="overflow-x-auto">
+      <table class="min-w-full text-sm">
+        <thead class="text-gray-400">
+          <tr>
+            <th class="text-left font-medium pb-2">Name</th>
+            <th class="text-left font-medium pb-2">Model</th>
+            <th class="text-left font-medium pb-2">Serial</th>
+            <th class="text-left font-medium pb-2">Size (GB)</th>
+            <th class="text-left font-medium pb-2">Firmware</th>
+            <th class="text-left font-medium pb-2">Temp (°C)</th>
+            <th class="text-left font-medium pb-2">Life Used (%)</th>
+            <th class="text-left font-medium pb-2">Written (TB)</th>
+            <th class="text-left font-medium pb-2">Read (TB)</th>
+            <th class="text-left font-medium pb-2">POH</th>
+            <th class="text-left font-medium pb-2">Unsafe</th>
+            <th class="text-left font-medium pb-2">Media Err</th>
+          </tr>
+        </thead>
+        <tbody id="ssd-table" class="text-gray-300">
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Motherboard Sensors -->
+  <div class="bg-gray-800 rounded-lg p-6 shadow-lg mt-6">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-xl font-semibold text-gray-200">Motherboard Sensors</h2>
+      <input id="sensor-filter" type="text" class="bg-gray-900 text-gray-200 border border-gray-700 rounded px-3 py-1 text-sm"
+             placeholder="Filter (e.g. package, core, vrm)">
+    </div>
+    <div class="overflow-x-auto">
+      <table class="min-w-full text-sm">
+        <thead class="text-gray-400">
+          <tr>
+            <th class="text-left font-medium pb-2">Chip</th>
+            <th class="text-left font-medium pb-2">Label</th>
+            <th class="text-left font-medium pb-2">Temp (°C)</th>
+          </tr>
+        </thead>
+        <tbody id="sensor-table" class="text-gray-300"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+      const API = `http://${location.hostname}:8000/metrics`;  <!-- สำคัญมาก -->
+
+    // -------------- helpers ----------------
+    const $ = (id) => document.getElementById(id);
+    const setText = (id, v) => { const el = $(id); if (el) el.innerText = v; };
+
+    // -------------- renderers ----------------
+    function renderGPU(gpu){
+      try{
+        if(!gpu) return;
+        setText('gpu-name',  gpu.name || '—');
+        setText('gpu-util',  `${Number(gpu.usage_percent||0).toFixed(0)}%`);
+        const used = Math.round(gpu.vram_used_mib||0);
+        const tot  = Math.round(gpu.vram_total_mib||0);
+        setText('gpu-mem', `${used} / ${tot} MiB`);
+        setText('gpu-temp',  `${Number(gpu.temp_c||0).toFixed(0)} °C`);
+        setText('gpu-power', `${Number(gpu.power_w||0).toFixed(2)} W`);
+      }catch(e){ console.error('renderGPU', e); }
+    }
+
+    function renderCPUandNet(sensors, net){
+      try{
+        // CPU temp: หา alias "CPU Package" ถ้าไม่มี เอา Package id 0
+        let src = '—';
+        let val = null;
+        const list = Array.isArray(sensors) ? sensors : [];
+        let pkg = list.find(s => s.alias === 'CPU Package') ||
+                  list.find(s => (s.chip||'')==='coretemp' && (s.label||'').toLowerCase().includes('package'));
+        if (pkg) { src = `source: ${pkg.chip} "${pkg.label}"`; val = pkg.temp_c; }
+        setText('cpu-temp', (val ?? val===0) ? `${Number(val).toFixed(1)} °C` : '—');
+        setText('cpu-src', src);
+
+        if (net){
+          const down = Math.round(net.rx_kbps||0);
+          const up   = Math.round(net.tx_kbps||0);
+          setText('net-down', `${down} kbps ↓`);
+          setText('net-up',   `${up} kbps ↑`);
+        }
+      }catch(e){ console.error('renderCPUandNet', e); }
+    }
+
+    function renderRAM(ram){
+      try{
+        if(!ram) return;
+        const used = Number(ram.used_gb ?? NaN);
+        const tot  = Number(ram.total_gb ?? NaN);
+        if(Number.isFinite(used) && Number.isFinite(tot)){
+          setText('ram-usage', `${Math.round(used)} / ${Math.round(tot)} GB`);
+        } else {
+          setText('ram-usage', '— GB');
+        }
+        const pct = Number(ram.percent ?? NaN);
+        setText('ram-percent', Number.isFinite(pct) ? `${Math.round(pct)}%` : '—%');
+
+        const dimm = ram.temp_dimm_max_c;
+        setText('ram-temp', (dimm ?? dimm===0) ? `${Number(dimm).toFixed(1)} °C` : '— °C');
+      }catch(e){ console.error('renderRAM', e); }
+    }
+
+    function renderSSDSummary(ssds){
+      try{
+        const list = Array.isArray(ssds) ? ssds : [];
+        const os   = list.find(x => (x.alias||'').toLowerCase()==='os')   || {};
+        const data = list.find(x => (x.alias||'').toLowerCase()==='data') || {};
+
+        const use = (d)=> (Number.isFinite(+d.fs_used_gb) && Number.isFinite(+d.fs_total_gb))
+          ? `${Math.round(+d.fs_used_gb)} / ${Math.round(+d.fs_total_gb)} GB` : '—';
+        const tmp = (d)=> (d.temp_c ?? d.temp_c===0) ? Number(d.temp_c).toFixed(1) : '—';
+        const rw  = (d)=> (Number.isFinite(+d.written_tb) && Number.isFinite(+d.read_tb))
+          ? `${(+d.written_tb).toFixed(2)} / ${(+d.read_tb).toFixed(2)}` : '—';
+
+        setText('ssd-sum-usage-os',  use(os));
+        setText('ssd-sum-usage-data',use(data));
+        setText('ssd-sum-temp-os',   tmp(os));
+        setText('ssd-sum-temp-data', tmp(data));
+        setText('ssd-sum-rw-os',     rw(os));
+        setText('ssd-sum-rw-data',   rw(data));
+      }catch(e){ console.error('renderSSDSummary', e); }
+    }
+
+    function renderSSD(ssds){
+      try{
+        const tbody = $('ssd-table'); if(!tbody) return;
+        const rows = (Array.isArray(ssds)?ssds:[]).slice().sort((a,b)=>
+          String(a.alias||a.ctrl).localeCompare(String(b.alias||b.ctrl))
+        );
+        const trunc=(s,n=12)=> (s&&s.length>n? s.slice(0,n)+'…' : (s||''));
+        tbody.innerHTML = rows.map(d=>`
+          <tr class="border-t border-gray-700">
+            <td class="py-2 pr-4">${d.alias||d.ctrl||'—'}</td>
+            <td class="py-2 pr-4">${d.model||'—'}</td>
+            <td class="py-2 pr-4">${trunc(d.serial||'—')}</td>
+            <td class="py-2 pr-4">${Number.isFinite(+d.size_gb)? Math.round(+d.size_gb) : '—'}</td>
+            <td class="py-2 pr-4">${d.firmware||'—'}</td>
+            <td class="py-2 pr-4">${(d.temp_c??d.temp_c===0)? Number(d.temp_c).toFixed(1):'—'}</td>
+            <td class="py-2 pr-4">${d.life_used_percent ?? '—'}</td>
+            <td class="py-2 pr-4">${Number.isFinite(+d.written_tb)?(+d.written_tb).toFixed(2):'—'}</td>
+            <td class="py-2 pr-4">${Number.isFinite(+d.read_tb)?(+d.read_tb).toFixed(2):'—'}</td>
+            <td class="py-2 pr-4">${d.power_on_hours ?? '—'}</td>
+            <td class="py-2 pr-4">${d.unsafe_shutdowns ?? '—'}</td>
+            <td class="py-2 pr-4">${d.media_errors ?? '—'}</td>
+          </tr>`).join('') || `<tr><td colspan="12" class="py-2 text-gray-500">No SSD detected</td></tr>`;
+      }catch(e){ console.error('renderSSD', e); }
+    }
+
+    function renderSensors(sensors){
+      try{
+        const tbody=$('sensor-table'); if(!tbody) return;
+        const q = ( $('sensor-filter')?.value || '' ).trim().toLowerCase();
+        const list=(Array.isArray(sensors)?sensors:[]).filter(s=>{
+          if(!q) return true;
+          const t=`${s.chip||''} ${s.label||''} ${s.alias||''}`.toLowerCase();
+          return t.includes(q);
+        });
+        tbody.innerHTML=list.map(s=>`
+          <tr class="border-t border-gray-700">
+            <td class="py-2 pr-4">${s.chip||'—'}</td>
+            <td class="py-2 pr-4">${s.alias||s.label||'—'}</td>
+            <td class="py-2">${(s.temp_c??s.temp_c===0)?Number(s.temp_c).toFixed(1):'—'}</td>
+          </tr>`).join('');
+      }catch(e){ console.error('renderSensors', e); }
+    }
+
+    // -------------- main update ----------------
+    async function updateData(){
+      try{
+        const r = await fetch(API, { cache: 'no-store' });
+        const d = await r.json();
+
+        try{ renderGPU(d.gpu); }catch(e){ console.error(e); }
+        try{ renderSSDSummary(d.ssd); }catch(e){ console.error(e); }
+        try{ renderRAM(d.ram); }catch(e){ console.error(e); }
+        try{ renderCPUandNet(d.sensors, d.net); }catch(e){ console.error(e); }
+        try{ renderSSD(d.ssd); }catch(e){ console.error(e); }
+        try{ renderSensors(d.sensors); }catch(e){ console.error(e); }
+
+      }catch(err){
+        console.error('fetch /metrics failed:', err);
+      }
+    }
+
+    updateData();
+    setInterval(updateData, 2000);
+    $('sensor-filter')?.addEventListener('input', ()=>renderSensors(window.__lastSensors||[]));
+  </script>
+</body>
+</html>
