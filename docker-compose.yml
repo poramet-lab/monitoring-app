@@ -19,6 +19,8 @@ services:
       - /dev/nvme1n1:/dev/nvme1n1
 
     volumes:
+      - /proc/net/dev:/host/proc/net/dev:ro
+      - /proc/net/route:/host/proc/net/route:ro
       - /sys/class/nvme:/sys/class/nvme:ro
       - /mnt/data:/mnt/data:ro   # << เพิ่มบรรทัดนี้
     # (ลบรายการ /dev/nvidia* ออก ไม่ต้องใช้แล้ว)

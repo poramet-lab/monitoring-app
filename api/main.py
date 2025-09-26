@@ -5,6 +5,101 @@ import subprocess, glob, os, psutil, json, time
 
 import re  # ใส้ไว้บนหัวไฟล์ ถ้ายังไม่มี
 
+import time
+from typing import Optional, Tuple
+
+HOST_NETDEV = "/host/proc/net/dev"
+HOST_ROUTE  = "/host/proc/net/route"
+
+def _get_default_iface_from_route(route_path: str = HOST_ROUTE) -> Optional[str]:
+    """
+    คืนชื่ออินเทอร์เฟซ default route จาก /host/proc/net/route
+    เลือกบรรทัดที่ Destination == '00000000'
+    """
+    try:
+        with open(route_path, "r") as f:
+            lines = f.read().strip().splitlines()
+        # ข้าม header แถวแรก
+        for line in lines[1:]:
+            parts = line.split()
+            # คอลัมน์: Iface  Destination  Gateway  Flags ...
+            if len(parts) >= 2 and parts[1] == "00000000":
+                return parts[0]
+    except Exception:
+        pass
+    return None
+
+
+def _read_netdev_bytes(iface: str, netdev_path: str = HOST_NETDEV) -> Optional[Tuple[int, int]]:
+    """
+    อ่าน rx_bytes / tx_bytes ของ iface จาก /host/proc/net/dev
+    รูปแบบแถว: 'iface:  rx_bytes ... tx_bytes ...'
+    คอลัมน์ rx=คอลัมน์ที่1 หลัง ':'  และ tx=คอลัมน์ที่9 หลัง ':'
+    """
+    try:
+        with open(netdev_path, "r") as f:
+            lines = f.read().strip().splitlines()
+        for line in lines[2:]:  # ข้าม 2 header lines
+            if ":" not in line:
+                continue
+            name, rest = line.split(":", 1)
+            name = name.strip()
+            if name == iface:
+                cols = rest.split()
+                rx_bytes = int(cols[0])
+                tx_bytes = int(cols[8])
+                return rx_bytes, tx_bytes
+    except Exception:
+        pass
+    return None
+
+
+# เก็บสถานะครั้งก่อนเพื่อคำนวณอัตรา
+_net_prev = {"ts": None, "rx": None, "tx": None}
+
+def net_rates_kbps_host() -> dict:
+    """
+    คำนวณอัตราเน็ตจาก host (kbps) ของ default iface
+    ถ้าหา iface ไม่ได้ หรืออ่าน host ไม่ได้ จะ fallback ไป eth0 ในคอนเทนเนอร์
+    คืนค่า: {"rx_kbps": float, "tx_kbps": float, "ifaces":[{"name":iface,"rx_kbps":...,"tx_kbps":...}]}
+    """
+    iface = _get_default_iface_from_route()
+    rx, tx = None, None
+
+    if iface:
+        pair = _read_netdev_bytes(iface)
+        if pair:
+            rx, tx = pair
+
+    # fallback: ใช้ psutil/net_io_counters ของคอนเทนเนอร์ (ถ้าคุณมีอยู่แล้ว) หรือให้เป็นศูนย์
+    if rx is None or tx is None:
+        try:
+            # Fallback แบบง่าย: อ่านจาก psutil ของ container เอง
+            import psutil
+            c = psutil.net_io_counters()
+            rx, tx = c.bytes_recv, c.bytes_sent
+            iface = iface or "container"
+        except Exception:
+            return {"rx_kbps": 0.0, "tx_kbps": 0.0, "ifaces": []}
+
+    now = time.time()
+    prev_ts = _net_prev["ts"]
+    prev_rx = _net_prev["rx"]
+    prev_tx = _net_prev["tx"]
+
+    _net_prev.update({"ts": now, "rx": rx, "tx": tx})
+
+    if not prev_ts or prev_rx is None or prev_tx is None:
+        # ครั้งแรกยังไม่มี baseline
+        return {"rx_kbps": 0.0, "tx_kbps": 0.0, "ifaces": [{"name": iface, "rx_kbps": 0.0, "tx_kbps": 0.0}]}
+
+    dt = max(1e-3, now - prev_ts)  # กันหารศูนย์
+    rx_kbps = max(0.0, (rx - prev_rx) * 8.0 / 1000.0 / dt)
+    tx_kbps = max(0.0, (tx - prev_tx) * 8.0 / 1000.0 / dt)
+
+    return {"rx_kbps": rx_kbps, "tx_kbps": tx_kbps, "ifaces": [{"name": iface, "rx_kbps": rx_kbps, "tx_kbps": tx_kbps}]}
+
+
 def _nvme_temp_for(ctrl: str) -> Optional[float]:
     """
     อ่านอุณหภูมิของคอนโทรลเลอร์ nvmeX ผ่าน sysfs: /sys/class/nvme/nvmeX/device/hwmon/*/temp*_input
@@ -258,6 +353,8 @@ def add_fs_usage_to_ssd(ssds):
 
 
 
+
+
 # ---------- API ----------
 @app.get("/")
 def root():
@@ -344,7 +441,7 @@ def metrics():
             "temp_dimm_max_c": ram_dimm_max_c(sensors),  # DIMM max
         },
         "sensors": sensors,
-        "net": net_rates_kbps(),   # (rx_kbps / tx_kbps)
+        "net": net_rates_kbps_host(),   # (rx_kbps / tx_kbps)
         "ssd": ssds,               # มี fs_used_gb / fs_total_gb เพิ่ม
     }
     return payload
@@ -369,3 +466,5 @@ def inventory():
             "labels": sorted(list(d["labels"]))
         })
     return {"summary": sorted(summary, key=lambda x: x["chip"]), "samples": sensors[:100]}
+
+
