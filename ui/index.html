@@ -6,13 +6,26 @@
   <title>PrivateAI Hub</title>
   <!-- Tailwind (CDN ใช้ได้ในเครื่อง) -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    // ปรับแต่ง Breakpoint ของ Tailwind CSS
+    // ให้ sm เริ่มที่ 500px เพื่อให้จอ 501pt แสดงผลแบบ 2 คอลัมน์
+    tailwind.config = {
+      theme: {
+        extend: {
+          screens: {
+            'sm': '500px',
+          },
+        }
+      }
+    }
+  </script>
 </head>
-<body class="bg-gray-900 text-white p-6 sm:p-8">
+<body class="bg-gray-900 text-white p-4 sm:p-6 md:p-8">
   <h1 class="text-2xl font-bold mb-1">PrivateAI Hub</h1>
   <p class="text-gray-300 mb-6">Real-time System Monitor</p>
 
-  <!-- GRID: 2 คอลัมน์ใหญ่ -->
-  <div class="grid gap-6 md:grid-cols-2">
+  <!-- GRID หลัก: 1, 2, หรือ 4 คอลัมน์ตามขนาดจอ -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
     <!-- GPU -->
     <div class="bg-gray-800 rounded-lg p-6 shadow-lg">
       <h2 class="text-xl font-semibold text-gray-200 mb-4">GPU</h2>
@@ -22,39 +35,6 @@
         <div><span class="font-semibold">VRAM:</span> <span id="gpu-mem">—</span></div>
         <div><span class="font-semibold">Temp:</span> <span id="gpu-temp">— °C</span></div>
         <div><span class="font-semibold">Power:</span> <span id="gpu-power">— W</span></div>
-      </div>
-    </div>
-
-    <!-- SSD Summary (สองคอลัมน์: OS / Data) -->
-    <div class="bg-gray-800 rounded-lg p-6 shadow-lg">
-      <h2 class="text-xl font-semibold text-gray-200 mb-4">SSD Health (Summary)</h2>
-      <div class="overflow-x-auto">
-        <table class="min-w-full text-sm text-gray-300">
-          <thead class="text-gray-400">
-            <tr>
-              <th class="text-left font-medium pb-2"></th>
-              <th class="text-left font-medium pb-2">OS</th>
-              <th class="text-left font-medium pb-2">Data</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr class="border-t border-gray-700">
-              <td class="py-2 pr-4 font-medium">Usage</td>
-              <td class="py-2 pr-8" id="ssd-sum-usage-os">—</td>
-              <td class="py-2" id="ssd-sum-usage-data">—</td>
-            </tr>
-            <tr class="border-t border-gray-700">
-              <td class="py-2 pr-4 font-medium">Temp (°C)</td>
-              <td class="py-2 pr-8" id="ssd-sum-temp-os">—</td>
-              <td class="py-2" id="ssd-sum-temp-data">—</td>
-            </tr>
-            <tr class="border-t border-gray-700">
-              <td class="py-2 pr-4 font-medium">Written/Read (TB)</td>
-              <td class="py-2 pr-8" id="ssd-sum-rw-os">—</td>
-              <td class="py-2" id="ssd-sum-rw-data">—</td>
-            </tr>
-          </tbody>
-        </table>
       </div>
     </div>
 
@@ -71,22 +51,47 @@
     <!-- CPU & Network -->
     <div class="bg-gray-800 rounded-lg p-6 shadow-lg">
       <h2 class="text-xl font-semibold text-gray-200 mb-4">CPU & Network</h2>
-      <div class="flex items-end justify-between">
+      <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 sm:gap-0">
         <div>
-          <div class="text-3xl font-bold text-cyan-300" id="cpu-temp">—</div>
+          <div class="text-3xl font-bold text-cyan-300" id="cpu-temp">— °C</div>
           <div class="text-sm text-gray-400 mt-1" id="cpu-src"></div>
+        </div>
+        <div class="sm:text-right">
+          <div class="text-3xl font-bold text-green-400" id="cpu-load">—%</div>
+          <div class="text-sm text-gray-400 mt-1">Load</div>
         </div>
       </div>
       <hr class="border-gray-700 my-4">
-      <div class="space-y-1 text-gray-300">
+      <div class="text-gray-300">
         <div><span class="font-semibold">Network:</span>
-          <span id="net-down">—</span> /
-          <span id="net-up">—</span>
+          <span id="net-down">— kbps ↓</span> /
+          <span id="net-up">— kbps ↑</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- SSD Summary (สองคอลัมน์: OS / Data) -->
+    <div class="bg-gray-800 rounded-lg p-6 shadow-lg">
+      <h2 class="text-xl font-semibold text-gray-200 mb-4">SSD Summary</h2>
+      <div class="grid grid-cols-1 gap-y-4 text-gray-300 text-sm">
+        <!-- OS Drive -->
+        <div>
+          <h3 class="font-semibold text-gray-200 mb-2 border-b border-gray-700 pb-1">OS Drive</h3>
+          <div class="flex justify-between"><span>Usage:</span> <span id="ssd-sum-usage-os">—</span></div>
+          <div class="flex justify-between"><span>Temp (°C):</span> <span id="ssd-sum-temp-os">—</span></div>
+          <div class="flex justify-between"><span>Written/Read (TB):</span> <span id="ssd-sum-rw-os">—</span></div>
+        </div>
+        <!-- Data Drive -->
+        <div>
+          <h3 class="font-semibold text-gray-200 mb-2 border-b border-gray-700 pb-1">Data Drive</h3>
+          <div class="flex justify-between"><span>Usage:</span> <span id="ssd-sum-usage-data">—</span></div>
+          <div class="flex justify-between"><span>Temp (°C):</span> <span id="ssd-sum-temp-data">—</span></div>
+          <div class="flex justify-between"><span>Written/Read (TB):</span> <span id="ssd-sum-rw-data">—</span></div>
         </div>
       </div>
     </div>
   </div>
-
+  
   <!-- SSD Health (Table) -->
   <div class="bg-gray-800 rounded-lg p-6 shadow-lg mt-6">
     <h2 class="text-xl font-semibold text-gray-200 mb-4">SSD Health</h2>
@@ -119,7 +124,7 @@
     <div class="flex items-center justify-between mb-4">
       <h2 class="text-xl font-semibold text-gray-200">Motherboard Sensors</h2>
       <input id="sensor-filter" type="text" class="bg-gray-900 text-gray-200 border border-gray-700 rounded px-3 py-1 text-sm"
-             placeholder="Filter (e.g. package, core, vrm)">
+            placeholder="Filter (e.g. package, core, vrm)">
     </div>
     <div class="overflow-x-auto">
       <table class="min-w-full text-sm">
@@ -135,12 +140,17 @@
     </div>
   </div>
 
+  <!-- ตัวแสดงขนาดหน้าจอ (Viewport) -->
+  <div id="viewport-size-display" class="fixed bottom-2 right-2 bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded-md z-50 pointer-events-none">
+  </div>
+
   <script>
       const API = `http://${location.hostname}:8000/metrics`;  <!-- สำคัญมาก -->
 
     // -------------- helpers ----------------
     const $ = (id) => document.getElementById(id);
     const setText = (id, v) => { const el = $(id); if (el) el.innerText = v; };
+    let __lastSensors = []; // เก็บข้อมูล sensors ล่าสุดไว้ใช้ filter
 
     // -------------- renderers ----------------
     function renderGPU(gpu){
@@ -156,17 +166,20 @@
       }catch(e){ console.error('renderGPU', e); }
     }
 
-    function renderCPUandNet(sensors, net){
+    function renderCPUandNet(cpu, sensors, net){
       try{
         // CPU temp: หา alias "CPU Package" ถ้าไม่มี เอา Package id 0
         let src = '—';
         let val = null;
         const list = Array.isArray(sensors) ? sensors : [];
         let pkg = list.find(s => s.alias === 'CPU Package') ||
-                  list.find(s => (s.chip||'')==='coretemp' && (s.label||'').toLowerCase().includes('package'));
+                  list.find(s => (s.chip||'').includes('coretemp') && (s.label||'').toLowerCase().includes('package'));
         if (pkg) { src = `source: ${pkg.chip} "${pkg.label}"`; val = pkg.temp_c; }
         setText('cpu-temp', (val ?? val===0) ? `${Number(val).toFixed(1)} °C` : '—');
         setText('cpu-src', src);
+
+        // CPU Load
+        setText('cpu-load', (cpu?.percent ?? cpu?.percent===0) ? `${Math.round(cpu.percent)}%` : '—%');
 
         if (net){
           const down = Math.round(net.rx_kbps||0);
@@ -201,18 +214,18 @@
         const os   = list.find(x => (x.alias||'').toLowerCase()==='os')   || {};
         const data = list.find(x => (x.alias||'').toLowerCase()==='data') || {};
 
-        const use = (d)=> (Number.isFinite(+d.fs_used_gb) && Number.isFinite(+d.fs_total_gb))
+        const use = (d) => (Number.isFinite(+d.fs_used_gb) && Number.isFinite(+d.fs_total_gb))
           ? `${Math.round(+d.fs_used_gb)} / ${Math.round(+d.fs_total_gb)} GB` : '—';
-        const tmp = (d)=> (d.temp_c ?? d.temp_c===0) ? Number(d.temp_c).toFixed(1) : '—';
-        const rw  = (d)=> (Number.isFinite(+d.written_tb) && Number.isFinite(+d.read_tb))
+        const tmp = (d) => (d.temp_c ?? d.temp_c === 0) ? `${Number(d.temp_c).toFixed(1)} °C` : '—';
+        const rw  = (d) => (Number.isFinite(+d.written_tb) && Number.isFinite(+d.read_tb))
           ? `${(+d.written_tb).toFixed(2)} / ${(+d.read_tb).toFixed(2)}` : '—';
 
-        setText('ssd-sum-usage-os',  use(os));
-        setText('ssd-sum-usage-data',use(data));
-        setText('ssd-sum-temp-os',   tmp(os));
+        setText('ssd-sum-usage-os', use(os));
+        setText('ssd-sum-usage-data', use(data));
+        setText('ssd-sum-temp-os', tmp(os));
         setText('ssd-sum-temp-data', tmp(data));
-        setText('ssd-sum-rw-os',     rw(os));
-        setText('ssd-sum-rw-data',   rw(data));
+        setText('ssd-sum-rw-os', rw(os));
+        setText('ssd-sum-rw-data', rw(data));
       }catch(e){ console.error('renderSSDSummary', e); }
     }
 
@@ -250,10 +263,11 @@
           const t=`${s.chip||''} ${s.label||''} ${s.alias||''}`.toLowerCase();
           return t.includes(q);
         });
+        __lastSensors = sensors; // เก็บข้อมูลล่าสุดไว้
         tbody.innerHTML=list.map(s=>`
           <tr class="border-t border-gray-700">
             <td class="py-2 pr-4">${s.chip||'—'}</td>
-            <td class="py-2 pr-4">${s.alias||s.label||'—'}</td>
+            <td class="py-2 pr-4">${s.label||'—'}</td>
             <td class="py-2">${(s.temp_c??s.temp_c===0)?Number(s.temp_c).toFixed(1):'—'}</td>
           </tr>`).join('');
       }catch(e){ console.error('renderSensors', e); }
@@ -268,7 +282,7 @@
         try{ renderGPU(d.gpu); }catch(e){ console.error(e); }
         try{ renderSSDSummary(d.ssd); }catch(e){ console.error(e); }
         try{ renderRAM(d.ram); }catch(e){ console.error(e); }
-        try{ renderCPUandNet(d.sensors, d.net); }catch(e){ console.error(e); }
+        try{ renderCPUandNet(d.cpu, d.sensors, d.net); }catch(e){ console.error(e); }
         try{ renderSSD(d.ssd); }catch(e){ console.error(e); }
         try{ renderSensors(d.sensors); }catch(e){ console.error(e); }
 
@@ -277,9 +291,25 @@
       }
     }
 
+    // -------------- Viewport Size Display ----------------
+    function updateViewportSize() {
+      const display = $('viewport-size-display');
+      if (display) {
+        const w = window.innerWidth;
+        const h = window.innerHeight;
+        display.innerText = `Viewport: ${w} x ${h} px`;
+      }
+    }
+
+    // -------------- Initial Setup ----------------
+    // อัปเดตข้อมูลทุก 2 วินาที
     updateData();
     setInterval(updateData, 2000);
-    $('sensor-filter')?.addEventListener('input', ()=>renderSensors(window.__lastSensors||[]));
+    // filter sensor table
+    $('sensor-filter')?.addEventListener('input', ()=>renderSensors(__lastSensors||[]));
+    // แสดงขนาด viewport และอัปเดตเมื่อปรับขนาดหน้าจอ
+    window.addEventListener('resize', updateViewportSize);
+    updateViewportSize(); // เรียกครั้งแรกตอนโหลด
   </script>
 </body>
 </html>

@@ -426,6 +426,7 @@ def _nvme_smart(dev: str) -> Optional[Dict[str, Any]]:
 @app.get("/metrics")
 def metrics():
     mem = psutil.virtual_memory()
+    cpu_percent = psutil.cpu_percent()
     sensors = hwmon_temps()
 
     # SSD + เติม usage เป็น GB
@@ -434,6 +435,9 @@ def metrics():
 
     payload = {
         "gpu": nv_gpu(),
+        "cpu": {
+            "percent": cpu_percent,
+        },
         "ram": {
             "used_gb": round(mem.used / 1024**3, 2),
             "total_gb": round(mem.total / 1024**3, 2),
@@ -466,5 +470,3 @@ def inventory():
             "labels": sorted(list(d["labels"]))
         })
     return {"summary": sorted(summary, key=lambda x: x["chip"]), "samples": sensors[:100]}
-
-
